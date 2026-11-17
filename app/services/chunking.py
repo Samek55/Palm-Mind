@@ -54,10 +54,13 @@ class SemanticChunker:
         embedder: Embedder,
         similarity_threshold: float = 0.55,
         max_chunk_words: int = 300,
+        min_chunk_words: int = 40,
     ) -> None:
         self.embedder = embedder
         self.similarity_threshold = similarity_threshold
         self.max_chunk_words = max_chunk_words
+        # without a floor, short documents (letters, forms) end up as one-line chunks
+        self.min_chunk_words = min_chunk_words
 
     def split(self, text: str) -> list[str]:
         sentences = split_sentences(text)
@@ -74,7 +77,7 @@ class SemanticChunker:
 
         for sentence, sim in zip(sentences[1:], similarities, strict=True):
             n_words = len(sentence.split())
-            topic_shift = sim < self.similarity_threshold
+            topic_shift = sim < self.similarity_threshold and current_words >= self.min_chunk_words
             too_long = current_words + n_words > self.max_chunk_words
             if topic_shift or too_long:
                 chunks.append(" ".join(current))
@@ -95,6 +98,7 @@ def get_chunker(
     overlap: int,
     similarity_threshold: float,
     max_chunk_words: int,
+    min_chunk_words: int,
 ) -> Chunker:
     if strategy is ChunkingStrategy.FIXED:
         return FixedSizeChunker(chunk_size=chunk_size, overlap=overlap)
@@ -103,5 +107,6 @@ def get_chunker(
             embedder,
             similarity_threshold=similarity_threshold,
             max_chunk_words=max_chunk_words,
+            min_chunk_words=min_chunk_words,
         )
     raise ValueError(f"Unknown chunking strategy: {strategy}")

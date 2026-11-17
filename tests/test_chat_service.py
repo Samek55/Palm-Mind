@@ -102,3 +102,38 @@ def test_question_uses_retrieved_context_and_history(
     # previous turn is included, and the final user turn carries the context
     assert sent[0] == {"role": "user", "content": "hi"}
     assert "Pro plan costs 50 dollars" in sent[-1]["content"]
+
+
+@pytest.mark.parametrize("broad,expect_sources", [(False, False), (True, True)])
+def test_broad_questions_skip_score_threshold(  # type: ignore[no-untyped-def]
+    llm, embedder, vector_store, memory, db: Session, broad: bool, expect_sources: bool
+) -> None:
+    service = ChatService(
+        Settings(retrieval_score_threshold=0.99), llm, embedder, vector_store, memory, BookingService()
+    )
+    chunks = ["The Pro plan costs 50 dollars per month.", "Our office is located in Kathmandu."]
+    vector_store.upsert(
+        [ChunkRecord("doc-1", "pricing.txt", i, c, "fixed") for i, c in enumerate(chunks)],
+        embedder.embed(chunks),
+    )
+    llm.structured = [
+        RouterDecision(intent=Intent.QUESTION, standalone_query="document overview", broad_question=broad)
+    ]
+
+    response = service.handle_message(db, "s-broad", "what is this document about?")
+
+    assert bool(response.sources) is expect_sources
+
+
+def test_duplicate_chunks_are_dropped(  # type: ignore[no-untyped-def]
+    chat_service: ChatService, llm, embedder, vector_store, db: Session
+) -> None:
+    text = "The Pro plan costs 50 dollars per month."
+    # same file ingested twice under different document ids
+    for doc_id in ("doc-1", "doc-2"):
+        vector_store.upsert([ChunkRecord(doc_id, "pricing.txt", 0, text, "fixed")], embedder.embed([text]))
+    llm.structured = [RouterDecision(intent=Intent.QUESTION, standalone_query="Pro plan price")]
+
+    response = chat_service.handle_message(db, "s-dup", "how much is the pro plan?")
+
+    assert [s.text for s in response.sources] == [text]

@@ -32,9 +32,9 @@ class Settings(BaseSettings):
 
     # LLM
     groq_api_key: str | None = None
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "openai/gpt-oss-120b"
     llm_temperature: float = 0.3
-    llm_max_tokens: int = 1024
+    llm_max_tokens: int = 2048
 
     # Ingestion / retrieval
     max_upload_size_mb: int = 20
@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     fixed_chunk_overlap: int = 40  # words
     semantic_similarity_threshold: float = 0.55
     semantic_max_chunk_words: int = 300
+    semantic_min_chunk_words: int = 40
     retrieval_top_k: int = Field(default=5, ge=1, le=20)
     retrieval_score_threshold: float = 0.25
 

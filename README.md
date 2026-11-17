@@ -17,7 +17,7 @@ No LangChain / RetrievalQAChain, no FAISS/Chroma, no UI – the retrieval and pr
 | Vector DB | Qdrant (server, Qdrant Cloud, or embedded mode for dev) |
 | Metadata / bookings | SQLAlchemy 2.0 – SQLite by default, any SQLAlchemy URL works |
 | Chat memory | Redis |
-| LLM | Groq (`llama-3.3-70b-versatile` by default) via the official `groq` SDK |
+| LLM | Groq (`openai/gpt-oss-120b` by default) via the official `groq` SDK |
 
 ## Project layout
 

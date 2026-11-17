@@ -20,6 +20,9 @@ not mentioned there. Do not invent values.
 return YYYY-MM-DD.
     time: 24-hour HH:MM (e.g. "3pm" -> "15:00").
 - cancel_booking: true only if the user clearly wants to abandon a booking in progress.
+- broad_question: true if the user asks about the documents as a whole (e.g. "what is \
+this document about?", "summarize it", "give me an overview"), false for questions \
+about a specific fact.
 """
 
 ANSWER_SYSTEM_PROMPT = """\

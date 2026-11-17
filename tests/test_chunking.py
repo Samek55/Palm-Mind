@@ -38,7 +38,9 @@ def test_semantic_chunker_splits_on_topic_change(embedder) -> None:  # type: ign
         "Cats are small pets. Cats are small and playful pets. "
         "Rockets fly to space quickly. Rockets fly to orbit and space."
     )
-    chunks = SemanticChunker(embedder, similarity_threshold=0.3, max_chunk_words=100).split(text)
+    chunks = SemanticChunker(
+        embedder, similarity_threshold=0.3, max_chunk_words=100, min_chunk_words=0
+    ).split(text)
 
     assert len(chunks) == 2
     assert "Cats" in chunks[0] and "Rockets" not in chunks[0]
@@ -51,3 +53,16 @@ def test_semantic_chunker_respects_max_words(embedder) -> None:  # type: ignore[
 
     assert all(len(c.split()) <= 8 for c in chunks)
     assert len(chunks) == 5
+
+
+def test_semantic_chunker_min_words(embedder) -> None:  # type: ignore[no-untyped-def]
+    text = (
+        "Cats are small pets. Cats are small and playful pets. "
+        "Rockets fly to space quickly. Rockets fly to orbit and space."
+    )
+    chunks = SemanticChunker(
+        embedder, similarity_threshold=0.3, max_chunk_words=100, min_chunk_words=40
+    ).split(text)
+
+    # the topic changes, but the first chunk is too short to close yet
+    assert len(chunks) == 1

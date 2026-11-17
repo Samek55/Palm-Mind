@@ -116,6 +116,8 @@ class LLMClient:
     def _wrap(exc: groq.APIError) -> LLMError:
         if isinstance(exc, groq.AuthenticationError):
             return LLMError("LLM authentication failed - check GROQ_API_KEY.")
+        if isinstance(exc, groq.NotFoundError):
+            return LLMError("LLM model not found - check LLM_MODEL against the models available on Groq.")
         if isinstance(exc, groq.RateLimitError):
             return LLMError("LLM rate limit reached, please retry shortly.")
         if isinstance(exc, groq.APIConnectionError):

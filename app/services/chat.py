@@ -30,6 +30,8 @@ class RouterDecision(BaseModel):
     standalone_query: str
     booking: BookingDraft = Field(default_factory=BookingDraft)
     cancel_booking: bool = False
+    # "what is this document about?" style questions - no single chunk matches them well
+    broad_question: bool = False
 
 
 class ChatService:
@@ -67,7 +69,7 @@ class ChatService:
         elif decision.intent is Intent.BOOKING or (draft and _has_any_field(decision.booking)):
             response = self._handle_booking(db, session_id, draft, decision.booking)
         elif decision.intent is Intent.QUESTION:
-            response = self._answer_question(session_id, history, message, decision.standalone_query, draft)
+            response = self._answer_question(session_id, history, message, decision, draft)
         else:
             response = self._chitchat(session_id, history, message)
 
@@ -149,23 +151,35 @@ class ChatService:
 
     # ---- RAG ---------------------------------------------------------------
 
-    def _retrieve(self, query: str) -> list[SearchHit]:
+    def _retrieve(self, query: str, broad: bool = False) -> list[SearchHit]:
         [vector] = self.embedder.embed([query])
-        return self.vector_store.search(
+        # Overview questions score low against every chunk, so the threshold would drop
+        # everything. For those we just take the top-k closest chunks.
+        top_k = self.settings.retrieval_top_k
+        hits = self.vector_store.search(
             vector,
-            top_k=self.settings.retrieval_top_k,
-            score_threshold=self.settings.retrieval_score_threshold,
+            # over-fetch a bit so dropping duplicates still leaves top_k results
+            top_k=top_k * 2,
+            score_threshold=None if broad else self.settings.retrieval_score_threshold,
         )
+        # the same file uploaded twice gives identical chunks - no point sending both to the LLM
+        unique: list[SearchHit] = []
+        seen: set[str] = set()
+        for hit in hits:
+            if hit.text not in seen:
+                seen.add(hit.text)
+                unique.append(hit)
+        return unique[:top_k]
 
     def _answer_question(
         self,
         session_id: str,
         history: list[ChatMessage],
         message: str,
-        standalone_query: str,
+        decision: RouterDecision,
         draft: BookingDraft | None,
     ) -> ChatResponse:
-        hits = self._retrieve(standalone_query)
+        hits = self._retrieve(decision.standalone_query, broad=decision.broad_question)
 
         if hits:
             context = "\n\n".join(

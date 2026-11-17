@@ -58,6 +58,7 @@ class IngestionService:
                 overlap=self.settings.fixed_chunk_overlap,
                 similarity_threshold=self.settings.semantic_similarity_threshold,
                 max_chunk_words=self.settings.semantic_max_chunk_words,
+                min_chunk_words=self.settings.semantic_min_chunk_words,
             )
             chunks = chunker.split(text)
             if not chunks:

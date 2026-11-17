@@ -51,7 +51,7 @@ class QdrantVectorStore:
         local_path: str = "./data/qdrant",
     ) -> None:
         if url:
-            self.client = QdrantClient(url=url, api_key=api_key)
+            self.client = QdrantClient(url=url, api_key=api_key or None)
         else:
             Path(local_path).mkdir(parents=True, exist_ok=True)
             logger.info("QDRANT_URL not set, using embedded Qdrant at %s", local_path)
