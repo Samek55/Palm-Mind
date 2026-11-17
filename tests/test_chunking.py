@@ -7,7 +7,8 @@ def test_fixed_chunker_respects_size_and_overlap() -> None:
     text = " ".join(f"w{i}" for i in range(25))
     chunks = FixedSizeChunker(chunk_size=10, overlap=3).split(text)
 
-    assert [len(c.split()) for c in chunks] == [10, 10, 10]
+    # step is 10 - 3 = 7, so chunks start at w0, w7, w14, w21; the last one is short
+    assert [len(c.split()) for c in chunks] == [10, 10, 10, 4]
     # last 3 words of a chunk start the next one
     assert chunks[0].split()[-3:] == chunks[1].split()[:3]
     assert chunks[-1].split()[-1] == "w24"
